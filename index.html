@@ -1,10 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>我的博客</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的博客</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 0 20px;
+      text-align: center;
+      background: #f8f9fa;
+    }
+    .title {
+      font-size: 32px;
+      color: #333;
+    }
+    .link-box {
+      margin-top: 40px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 30px;
+      background: #07c160;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .btn:hover {
+      background: #06ad56;
+    }
+  </style>
 </head>
 <body>
-    <h1>Hello，这是我的 GitHub 博客</h1>
-    <p>欢迎访问：用户名.github.io</p>
+  <h1 class="title">我的博客</h1>
+
+  <div class="link-box">
+    <a href="tools/10000.html" class="btn">🎂 人生10000天计算器</a>
+  </div>
 </body>
 </html>
