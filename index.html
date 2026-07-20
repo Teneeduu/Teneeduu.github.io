@@ -1,45 +1,387 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的博客</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 600px;
-      margin: 100px auto;
-      padding: 0 20px;
-      text-align: center;
-      background: #f8f9fa;
-    }
-    .title {
-      font-size: 32px;
-      color: #333;
-    }
-    .link-box {
-      margin-top: 40px;
-    }
-    .btn {
-      display: inline-block;
-      padding: 14px 30px;
-      background: #07c160;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: 500;
-    }
-    .btn:hover {
-      background: #06ad56;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teneeduu // 赛博空间</title>
+<meta name="description" content="Teneeduu 的个人主页 — 赛博朋克风格">
+<style>
+/* =========================================================
+   赛博朋克霓虹主题 · 全部样式集中在这里
+   想改颜色，改下面这几个变量即可：
+   --cyan  青色主色
+   --magenta 品红副色
+   ========================================================= */
+:root{
+  --cyan:#00f0ff;
+  --magenta:#ff00e5;
+  --bg:#05060a;
+  --panel:rgba(10,14,24,.6);
+  --line:rgba(0,240,255,.25);
+  --text:#d6f7ff;
+  --muted:#7c8ba1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+  line-height:1.6;
+}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--magenta);color:#fff}
+
+/* 背景画布 + 扫描线覆盖层 */
+#bg-canvas{position:fixed;inset:0;z-index:0}
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,240,255,.03) 3px,rgba(0,0,0,0) 4px);
+  mix-blend-mode:screen;
+}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75) 100%)}
+
+/* ============ 开场 LOADING 界面 ============ */
+#boot{
+  position:fixed;inset:0;z-index:100;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:"Courier New",monospace;transition:opacity .8s ease;
+}
+#boot.done{opacity:0;pointer-events:none}
+.boot-title{color:var(--cyan);font-size:clamp(20px,5vw,34px);letter-spacing:6px;
+  text-shadow:0 0 12px var(--cyan);margin-bottom:26px}
+.boot-log{width:min(90vw,520px);height:120px;color:#4be3a5;font-size:13px;
+  text-align:left;overflow:hidden;margin-bottom:22px;opacity:.9}
+.boot-log div{white-space:nowrap}
+.bar{width:min(90vw,520px);height:6px;background:rgba(0,240,255,.15);border:1px solid var(--line);
+  border-radius:4px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));
+  box-shadow:0 0 14px var(--cyan);transition:width .1s linear}
+.bar-pct{color:var(--cyan);font-size:13px;margin-top:10px;letter-spacing:2px}
+
+/* ============ 导航 ============ */
+nav{position:fixed;top:0;left:0;right:0;z-index:40;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px clamp(16px,5vw,48px);
+  background:linear-gradient(180deg,rgba(5,6,10,.9),transparent);
+  backdrop-filter:blur(4px)}
+nav .logo{font-weight:800;letter-spacing:2px;color:var(--cyan);text-shadow:0 0 10px var(--cyan)}
+nav .links{display:flex;gap:clamp(10px,3vw,28px);font-size:14px}
+nav .links a{position:relative;opacity:.8;transition:.2s;padding:4px 0}
+nav .links a:hover{opacity:1;color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+nav .links a::after{content:"";position:absolute;left:0;bottom:-3px;width:0;height:1px;
+  background:var(--cyan);box-shadow:0 0 6px var(--cyan);transition:width .25s}
+nav .links a:hover::after{width:100%}
+
+/* ============ 通用区块 ============ */
+main{position:relative;z-index:10}
+section{padding:clamp(70px,12vh,130px) clamp(20px,6vw,80px);max-width:1100px;margin:0 auto}
+.sec-label{color:var(--magenta);font-family:"Courier New",monospace;font-size:13px;
+  letter-spacing:4px;text-transform:uppercase;margin-bottom:14px;text-shadow:0 0 8px var(--magenta)}
+.sec-title{font-size:clamp(26px,5vw,40px);font-weight:800;letter-spacing:1px;margin-bottom:36px}
+.sec-title b{color:var(--cyan);text-shadow:0 0 14px var(--cyan)}
+
+/* 滚动入场动画 */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ============ HERO ============ */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  max-width:1100px;margin:0 auto;padding:0 clamp(20px,6vw,80px)}
+.hero-hi{color:var(--magenta);font-family:"Courier New",monospace;letter-spacing:3px;
+  margin-bottom:16px;font-size:clamp(13px,2vw,16px)}
+.glitch{font-size:clamp(48px,13vw,120px);font-weight:900;letter-spacing:2px;line-height:1;
+  position:relative;color:#fff;text-shadow:0 0 18px rgba(0,240,255,.5)}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;overflow:hidden}
+.glitch::before{color:var(--cyan);animation:gl1 3s infinite linear alternate}
+.glitch::after{color:var(--magenta);animation:gl2 2.6s infinite linear alternate}
+@keyframes gl1{0%{clip-path:inset(10% 0 85% 0);transform:translate(-2px,-1px)}
+  20%{clip-path:inset(80% 0 5% 0);transform:translate(2px,1px)}
+  40%{clip-path:inset(40% 0 40% 0);transform:translate(-1px,1px)}
+  60%{clip-path:inset(20% 0 60% 0);transform:translate(1px,-1px)}
+  100%{clip-path:inset(60% 0 20% 0);transform:translate(-1px,0)}}
+@keyframes gl2{0%{clip-path:inset(70% 0 15% 0);transform:translate(2px,1px)}
+  30%{clip-path:inset(10% 0 80% 0);transform:translate(-2px,-1px)}
+  60%{clip-path:inset(50% 0 30% 0);transform:translate(1px,1px)}
+  100%{clip-path:inset(30% 0 55% 0);transform:translate(-1px,-1px)}}
+.hero-sub{margin-top:22px;font-size:clamp(15px,2.4vw,22px);color:var(--muted);
+  font-family:"Courier New",monospace;min-height:1.6em}
+.hero-sub .cursor{color:var(--cyan);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.hero-cta{margin-top:42px;display:flex;gap:16px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 26px;border:1px solid var(--cyan);
+  color:var(--cyan);font-weight:600;letter-spacing:1px;border-radius:6px;
+  background:rgba(0,240,255,.05);transition:.25s;cursor:pointer}
+.btn:hover{background:var(--cyan);color:#02121a;box-shadow:0 0 24px var(--cyan);transform:translateY(-2px)}
+.btn.alt{border-color:var(--magenta);color:var(--magenta);background:rgba(255,0,229,.05)}
+.btn.alt:hover{background:var(--magenta);color:#fff;box-shadow:0 0 24px var(--magenta)}
+.scroll-hint{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  color:var(--muted);font-size:12px;letter-spacing:2px;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,8px)}}
+
+/* ============ 卡片通用 ============ */
+.grid{display:grid;gap:22px}
+.grid.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:26px;overflow:hidden;transition:.3s;backdrop-filter:blur(6px)}
+.card::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));opacity:.7}
+.card:hover{transform:translateY(-6px);border-color:var(--cyan);
+  box-shadow:0 10px 40px rgba(0,240,255,.15)}
+.card h3{font-size:19px;margin-bottom:10px;color:#fff}
+.card p{color:var(--muted);font-size:14.5px}
+.card .tag{display:inline-block;margin-top:14px;margin-right:8px;padding:3px 10px;font-size:12px;
+  border:1px solid var(--line);border-radius:20px;color:var(--cyan);font-family:"Courier New",monospace}
+.card .go{margin-top:16px;display:inline-block;color:var(--cyan);font-size:14px;font-weight:600}
+.card .go::after{content:" →";transition:.2s}
+.card:hover .go::after{margin-left:6px}
+
+/* ============ ABOUT ============ */
+.about-wrap{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center}
+.avatar{width:150px;height:150px;border-radius:50%;border:2px solid var(--cyan);
+  display:flex;align-items:center;justify-content:center;font-size:60px;font-weight:900;color:var(--cyan);
+  background:radial-gradient(circle,rgba(0,240,255,.12),transparent);
+  box-shadow:0 0 30px rgba(0,240,255,.3);text-shadow:0 0 16px var(--cyan)}
+.about-text p{color:var(--muted);margin-bottom:14px;max-width:640px}
+.skills{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.skills span{padding:6px 14px;border:1px solid var(--line);border-radius:6px;font-size:13px;
+  font-family:"Courier New",monospace;color:var(--cyan);transition:.2s}
+.skills span:hover{background:rgba(0,240,255,.1);box-shadow:0 0 12px rgba(0,240,255,.3)}
+@media(max-width:640px){.about-wrap{grid-template-columns:1fr;text-align:center;justify-items:center}}
+
+/* ============ 联系方式 ============ */
+.social{display:flex;flex-wrap:wrap;gap:18px}
+.social a{display:flex;align-items:center;gap:10px;padding:14px 22px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);transition:.25s;font-size:15px}
+.social a:hover{border-color:var(--magenta);color:var(--magenta);transform:translateY(-3px);
+  box-shadow:0 8px 30px rgba(255,0,229,.2)}
+.social .ico{font-size:20px}
+
+footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;
+  font-family:"Courier New",monospace;border-top:1px solid var(--line);position:relative;z-index:10}
+footer b{color:var(--cyan)}
+</style>
 </head>
 <body>
-  <h1 class="title">我的博客</h1>
 
-  <div class="link-box">
-    <a href="tools/10000.html" class="btn">🎂 人生10000天计算器</a>
+<!-- 背景动画层 -->
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ============ 开场 LOADING ============ -->
+<div id="boot">
+  <div class="boot-title">TENEEDUU_OS</div>
+  <div class="boot-log" id="boot-log"></div>
+  <div class="bar"><span id="bar"></span></div>
+  <div class="bar-pct" id="pct">0%</div>
+</div>
+
+<!-- ============ 导航 ============ -->
+<nav>
+  <div class="logo">◈ TENEEDUU</div>
+  <div class="links">
+    <a href="#about">关于</a>
+    <a href="#tools">工具</a>
+    <a href="#projects">项目</a>
+    <a href="#contact">联系</a>
   </div>
+</nav>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section id="hero">
+    <div class="hero-hi">// WELCOME TO MY CYBERSPACE</div>
+    <!-- 主标题：想改名字改下面 data-text 和文字内容两处 -->
+    <h1 class="glitch" data-text="TENEEDUU">TENEEDUU</h1>
+    <div class="hero-sub"><span id="typed"></span><span class="cursor">▊</span></div>
+    <div class="hero-cta">
+      <a href="#projects" class="btn">查看项目</a>
+      <a href="#contact" class="btn alt">联系我</a>
+    </div>
+    <div class="scroll-hint">↓ SCROLL ↓</div>
+  </section>
+
+  <!-- ============ 关于我 ============ -->
+  <section id="about">
+    <div class="reveal">
+      <div class="sec-label">// 01 — About</div>
+      <h2 class="sec-title">关于 <b>我</b></h2>
+    </div>
+    <div class="about-wrap reveal">
+      <!-- 头像：这里用了首字母 T，想换成图片见下方“如何更新”说明 -->
+      <div class="avatar">T</div>
+      <div class="about-text">
+        <!-- ↓↓↓ 改这里的自我介绍 ↓↓↓ -->
+        <p>你好，我是 <b style="color:var(--cyan)">Teneeduu</b>。一个喜欢折腾代码、把想法变成小工具的人。</p>
+        <p>这个网站是我的赛博空间，收录我做的小工具和项目。欢迎四处逛逛。</p>
+        <!-- ↑↑↑ 改上面的自我介绍 ↑↑↑ -->
+        <div class="skills">
+          <!-- 技能标签，随意增删 -->
+          <span>JavaScript</span><span>HTML/CSS</span><span>Python</span>
+          <span>创意编程</span><span>产品思维</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 小工具 ============ -->
+  <section id="tools">
+    <div class="reveal">
+      <div class="sec-label">// 02 — Tools</div>
+      <h2 class="sec-title">小 <b>工具</b></h2>
+    </div>
+    <div class="grid g3 reveal">
+      <!-- 工具卡片：复制一整个 <a class="card"> 块即可新增一个工具 -->
+      <a class="card" href="tools/10000.html">
+        <h3>🧬 生命仪表盘</h3>
+        <p>输入出生日期，生成你的生命数据：已活天数、精确年龄、天数里程碑时间轴、人生进度条和趣味统计。</p>
+        <span class="tag">dashboard</span>
+        <span class="go">打开工具</span>
+      </a>
+      <!-- 占位卡片：做了新工具就把下面这个替换掉 -->
+      <div class="card" style="opacity:.5">
+        <h3>🔧 更多工具</h3>
+        <p>正在打造中…… 敬请期待。</p>
+        <span class="tag">soon</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 项目作品 ============ -->
+  <section id="projects">
+    <div class="reveal">
+      <div class="sec-label">// 03 — Projects</div>
+      <h2 class="sec-title">项目 <b>作品</b></h2>
+    </div>
+    <div class="grid g2 reveal">
+      <!-- 项目卡片：复制整块新增一个项目，改标题/描述/链接/标签 -->
+      <a class="card" href="https://github.com/Teneeduu" target="_blank" rel="noopener">
+        <h3>◈ 个人主页</h3>
+        <p>你正在看的这个赛博朋克风格个人网站，纯前端、无依赖，托管在 GitHub Pages。</p>
+        <span class="tag">html</span><span class="tag">canvas</span>
+        <span class="go">查看源码</span>
+      </a>
+      <div class="card" style="opacity:.5">
+        <h3>◈ 项目占位</h3>
+        <p>把你的项目放这里 —— 标题、一句话介绍、技术标签、链接。</p>
+        <span class="tag">todo</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 联系方式 ============ -->
+  <section id="contact">
+    <div class="reveal">
+      <div class="sec-label">// 04 — Contact</div>
+      <h2 class="sec-title">联系 <b>我</b></h2>
+    </div>
+    <div class="social reveal">
+      <!-- 改成你自己的链接；不需要的删掉，想加的复制一行 -->
+      <a href="https://github.com/Teneeduu" target="_blank" rel="noopener"><span class="ico">⌨</span> GitHub</a>
+      <a href="mailto:as18771013046@gmail.com"><span class="ico">✉</span> Email</a>
+      <a href="#" onclick="alert('微信号：改成你的微信号');return false"><span class="ico">💬</span> 微信</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  © <span id="year"></span> <b>TENEEDUU</b> · 用 ❤ 和 &lt;code/&gt; 打造 · Powered by GitHub Pages
+</footer>
+
+<script>
+/* =========================================================
+   全部脚本，无任何外部依赖
+   ========================================================= */
+
+/* ---------- 1. 开场 LOADING 启动动画 ---------- */
+(function(){
+  const log=document.getElementById('boot-log');
+  const bar=document.getElementById('bar');
+  const pct=document.getElementById('pct');
+  const lines=[
+    '> initializing cyberspace...',
+    '> loading neural interface [OK]',
+    '> mounting /dev/teneeduu [OK]',
+    '> establishing uplink...',
+    '> decrypting profile [OK]',
+    '> rendering hologram...',
+    '> access granted. welcome.'
+  ];
+  let li=0;
+  const logTimer=setInterval(()=>{
+    if(li<lines.length){const d=document.createElement('div');d.textContent=lines[li++];log.appendChild(d);}
+    else clearInterval(logTimer);
+  },260);
+  let p=0;
+  const barTimer=setInterval(()=>{
+    p+=Math.random()*9+3;if(p>=100){p=100;clearInterval(barTimer);finish();}
+    bar.style.width=p+'%';pct.textContent=Math.floor(p)+'%';
+  },110);
+  function finish(){
+    setTimeout(()=>{document.getElementById('boot').classList.add('done');startTyping();revealInit();},450);
+  }
+})();
+
+/* ---------- 2. HERO 打字机 ---------- */
+function startTyping(){
+  // ↓ 想改这几句轮播文字，改这个数组 ↓
+  const phrases=['热爱代码与创造 ⚡','把想法变成工具 🔧','探索赛博空间 🌐','Just keep building.'];
+  const el=document.getElementById('typed');
+  let pi=0,ci=0,del=false;
+  (function tick(){
+    const cur=phrases[pi];
+    el.textContent=del?cur.slice(0,ci--):cur.slice(0,ci++);
+    if(!del&&ci>cur.length){del=true;setTimeout(tick,1400);return;}
+    if(del&&ci<0){del=false;ci=0;pi=(pi+1)%phrases.length;}
+    setTimeout(tick,del?45:95);
+  })();
+}
+
+/* ---------- 3. 滚动入场（IntersectionObserver） ---------- */
+function revealInit(){
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+}
+
+/* ---------- 4. 背景：粒子网格 + 鼠标交互 ---------- */
+(function(){
+  const cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');
+  let w,h,pts=[];const mouse={x:-999,y:-999};
+  function resize(){w=cv.width=innerWidth;h=cv.height=innerHeight;
+    const n=Math.min(90,Math.floor(w*h/16000));pts=[];
+    for(let i=0;i<n;i++)pts.push({x:Math.random()*w,y:Math.random()*h,
+      vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4});}
+  addEventListener('resize',resize);resize();
+  addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  addEventListener('mouseout',()=>{mouse.x=mouse.y=-999;});
+  function loop(){
+    ctx.clearRect(0,0,w,h);
+    for(const p of pts){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;
+      const dx=p.x-mouse.x,dy=p.y-mouse.y,dm=Math.hypot(dx,dy);
+      if(dm<140){p.x+=dx/dm*1.4;p.y+=dy/dm*1.4;}
+      ctx.beginPath();ctx.arc(p.x,p.y,1.6,0,7);ctx.fillStyle='rgba(0,240,255,.8)';ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const a=pts[i],b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<120){ctx.strokeStyle='rgba(0,240,255,'+(1-d/120)*.18+')';
+        ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ---------- 5. 页脚年份 ---------- */
+document.getElementById('year').textContent=new Date().getFullYear();
+</script>
 </body>
 </html>
