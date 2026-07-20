@@ -86,7 +86,7 @@ input[type=date]:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,240,2
 
   <div class="panel">
     <label>输入你的出生日期 // BIRTH DATE</label>
-    <input type="date" id="birth">
+    <input type="date" id="birth" min="1900-01-01">
     <button class="btn" onclick="calc()">▶ 生成我的生命数据</button>
     <div class="tip">数据仅在你的浏览器本地计算，不上传</div>
   </div>
@@ -136,6 +136,9 @@ input[type=date]:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,240,2
 <script>
 const WEEK=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 const LIFE_EXPECT_YEARS=80; // 人生进度按 80 岁算，可改
+// 把日期框上限设为今天：限制年份为 4 位（输满 4 位自动跳月份），也禁止选未来
+(function(){const t=new Date();document.getElementById('birth').max=
+  t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');})();
 
 function fmt(n){return n.toLocaleString('en-US')}
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}

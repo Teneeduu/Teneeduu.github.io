@@ -44,7 +44,7 @@ input[type=date]:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,240,2
   <div class="subtitle">// COSMIC AGE CALCULATOR</div>
   <div class="panel">
     <label>输入出生日期 // BIRTH DATE</label>
-    <input type="date" id="birth">
+    <input type="date" id="birth" min="1900-01-01">
     <button class="btn" onclick="calc()">🌌 换算我的宇宙尺度</button>
   </div>
   <div id="out">
@@ -53,6 +53,9 @@ input[type=date]:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,240,2
   </div>
 </div>
 <script>
+// 把日期框上限设为今天：限制年份为 4 位（输满 4 位自动跳月份），也禁止选未来
+(function(){const t=new Date();document.getElementById('birth').max=
+  t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');})();
 function fmt(n){return Math.round(n).toLocaleString('en-US')}
 function calc(){
   const v=document.getElementById('birth').value;
