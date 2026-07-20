@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智子监控台 // Sophon Monitor</title>
+<style>
+:root{--cyan:#00f0ff;--magenta:#ff00e5;--green:#00ff88;--warn:#ff3b6b;--bg:#05060a;
+  --panel:rgba(10,14,24,.65);--line:rgba(0,240,255,.25);--text:#d6f7ff;--muted:#7c8ba1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",-apple-system,"Microsoft YaHei",sans-serif;background:var(--bg);
+  color:var(--text);min-height:100vh;padding:28px 16px 60px;overflow-x:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,240,255,.03) 3px,transparent 4px)}
+a{color:var(--cyan);text-decoration:none}
+.back{display:block;max-width:680px;margin:0 auto 20px;font-family:"Courier New",monospace;font-size:13px;opacity:.8}
+.back:hover{text-shadow:0 0 8px var(--cyan)}
+.wrap{max-width:680px;margin:0 auto}
+h1{text-align:center;font-size:clamp(24px,6vw,34px);font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 18px rgba(0,240,255,.5)}
+h1 b{color:var(--cyan)}
+.subtitle{text-align:center;color:var(--magenta);font-family:"Courier New",monospace;font-size:12px;letter-spacing:3px;margin:6px 0 22px;text-shadow:0 0 8px var(--magenta)}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:14px;backdrop-filter:blur(6px)}
+.stat{font-family:"Courier New",monospace;font-size:13px;color:var(--muted)}
+.stat b{color:var(--cyan);font-size:15px}
+.threat b{color:var(--warn);text-shadow:0 0 8px var(--warn)}
+.ctrl{padding:9px 16px;border:1px solid var(--cyan);background:rgba(0,240,255,.06);color:var(--cyan);
+  border-radius:8px;font-family:"Courier New",monospace;font-size:13px;cursor:pointer;letter-spacing:1px;transition:.2s}
+.ctrl:hover{background:var(--cyan);color:#02121a;box-shadow:0 0 16px var(--cyan)}
+.term{background:#000;border:1px solid var(--line);border-radius:12px;padding:18px;height:60vh;min-height:340px;
+  overflow-y:auto;font-family:"Courier New",monospace;font-size:13.5px;line-height:1.75}
+.term::-webkit-scrollbar{width:8px}.term::-webkit-scrollbar-thumb{background:rgba(0,240,255,.3);border-radius:4px}
+.term .ln{white-space:pre-wrap;word-break:break-all;animation:in .2s}
+@keyframes in{from{opacity:0}to{opacity:1}}
+.t{color:#4a5a6a}.ok{color:var(--green)}.info{color:var(--cyan)}.warn{color:var(--warn)}.mag{color:var(--magenta)}
+.cur{color:var(--green);animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
+</style>
+</head>
+<body>
+<a class="back" href="../index.html">← 返回主页</a>
+<div class="wrap">
+  <h1>智子 <b>监控台</b></h1>
+  <div class="subtitle">// SOPHON MONITOR · 实时监听地球通讯</div>
+  <div class="bar">
+    <div class="stat">拦截信号 <b id="cnt">0</b></div>
+    <div class="stat">锁定坐标 <b id="loc">0</b></div>
+    <div class="stat threat">威胁等级 <b id="threat">低</b></div>
+    <button class="ctrl" id="toggle">⏸ 暂停监听</button>
+  </div>
+  <div class="term" id="term"></div>
+</div>
+<script>
+const term=document.getElementById('term');
+const cities=['北京','上海','东京','纽约','伦敦','红岸基地','日内瓦','旧金山','莫斯科','悉尼','开普敦','南极观测站'];
+const acts=[
+  ['info','拦截到一段无线电通讯，来源：'],
+  ['info','正在解析人类语言协议…… 目标：'],
+  ['ok','已破译加密信道，位置：'],
+  ['warn','侦测到高能物理实验活动，坐标：'],
+  ['ok','量子纠缠链路稳定，延迟 0ms，节点：'],
+  ['mag','标记一名疑似面壁者，追踪中：'],
+  ['warn','⚠ 检测到对外星文明的探测尝试，来源：'],
+  ['info','同步冷冻人苏醒记录，地点：'],
+  ['ok','已在该区域布设监视，覆盖：'],
+  ['mag','拦截到关键词【黑暗森林】，发信地：']
+];
+const extra=['[SIGNAL OK]','[已归档]','[威胁+1]','[持续监听]','[坐标已锁]','[等待指令]','[LOCKED]','[TRACE]'];
+let cnt=0,loc=0,running=true;
+function pad(n){return String(n).padStart(2,'0')}
+function now(){const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+function line(){
+  const a=acts[Math.floor(Math.random()*acts.length)];
+  const city=cities[Math.floor(Math.random()*cities.length)];
+  const ex=extra[Math.floor(Math.random()*extra.length)];
+  const coord='E'+(Math.random()*180).toFixed(2)+'° N'+(Math.random()*90).toFixed(2)+'°';
+  const el=document.createElement('div');el.className='ln';
+  el.innerHTML='<span class="t">['+now()+']</span> <span class="'+a[0]+'">'+a[1]+city+' '+coord+' '+ex+'</span>';
+  term.appendChild(el);
+  cnt++;if(a[0]==='ok'||a[0]==='warn')loc++;
+  document.getElementById('cnt').textContent=cnt;
+  document.getElementById('loc').textContent=loc;
+  const t=cnt<15?'低':cnt<35?'中':cnt<60?'高':'⚠ 极高';
+  document.getElementById('threat').textContent=t;
+  while(term.children.length>200)term.removeChild(term.firstChild);
+  term.scrollTop=term.scrollHeight;
+}
+// 开机日志
+['> SOPHON v11.0 online','> 二维展开完成，进入三维空间','> 已抵达地球轨道，开始全频段监听','> 目标文明技术等级：初级 · 建议：锁死其基础科学','> ─────────────────────────']
+  .forEach(s=>{const el=document.createElement('div');el.className='ln ok';el.textContent=s;term.appendChild(el);});
+let timer=setInterval(()=>{if(running)line();},900+Math.random()*600);
+function tick(){clearInterval(timer);timer=setInterval(()=>{if(running)line();},700+Math.random()*900);}
+setInterval(tick,4000);
+document.getElementById('toggle').addEventListener('click',function(){
+  running=!running;this.textContent=running?'⏸ 暂停监听':'▶ 继续监听';
+});
+</script>
+</body>
+</html>

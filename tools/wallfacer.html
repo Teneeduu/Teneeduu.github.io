@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面壁者密语生成器 // Wallfacer</title>
+<style>
+:root{--cyan:#00f0ff;--magenta:#ff00e5;--bg:#05060a;--panel:rgba(10,14,24,.65);
+  --line:rgba(0,240,255,.25);--text:#d6f7ff;--muted:#7c8ba1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",-apple-system,"Microsoft YaHei",sans-serif;background:var(--bg);
+  color:var(--text);min-height:100vh;padding:28px 16px 60px;overflow-x:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,240,255,.025) 3px,transparent 4px)}
+a{color:var(--cyan);text-decoration:none}
+.back{display:block;max-width:560px;margin:0 auto 20px;font-family:"Courier New",monospace;font-size:13px;opacity:.8}
+.back:hover{text-shadow:0 0 8px var(--cyan)}
+.wrap{max-width:560px;margin:0 auto}
+h1{text-align:center;font-size:clamp(24px,6vw,34px);font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 18px rgba(0,240,255,.5)}
+h1 b{color:var(--cyan)}
+.subtitle{text-align:center;color:var(--magenta);font-family:"Courier New",monospace;font-size:12px;letter-spacing:3px;margin:6px 0 26px;text-shadow:0 0 8px var(--magenta)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px;position:relative;overflow:hidden;backdrop-filter:blur(6px)}
+.panel::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--cyan),var(--magenta))}
+label{display:block;font-size:13px;color:var(--muted);letter-spacing:1px;margin-bottom:10px;font-family:"Courier New",monospace}
+textarea{width:100%;padding:14px;background:rgba(0,240,255,.05);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;outline:none;resize:vertical;min-height:70px;font-family:inherit}
+textarea:focus{border-color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.2)}
+.btn{width:100%;margin-top:14px;padding:15px;background:linear-gradient(90deg,var(--cyan),var(--magenta));color:#02121a;border:none;border-radius:10px;font-size:16px;font-weight:800;letter-spacing:2px;cursor:pointer;transition:.2s}
+.btn:hover{box-shadow:0 0 26px rgba(0,240,255,.5);transform:translateY(-2px)}
+.mtitle{font-size:13px;color:var(--magenta);letter-spacing:2px;font-family:"Courier New",monospace;margin-bottom:14px;text-shadow:0 0 8px var(--magenta)}
+#code{display:none}#code.show{display:block;animation:fade .5s}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.cipher{font-size:19px;line-height:1.9;color:#fff;font-weight:600;text-align:center;padding:6px 0}
+.reveal-box{margin-top:12px}
+.reveal-txt{display:none;color:var(--cyan);font-size:14px;line-height:1.8;padding-top:12px;border-top:1px dashed rgba(0,240,255,.15);margin-top:12px}
+.reveal-txt.show{display:block;animation:fade .4s}
+.small{width:100%;margin-top:0;padding:11px;background:rgba(255,0,229,.08);border:1px solid rgba(255,0,229,.35);color:var(--magenta);border-radius:8px;font-family:"Courier New",monospace;font-size:13px;letter-spacing:1px;cursor:pointer}
+.small:hover{background:rgba(255,0,229,.18)}
+</style>
+</head>
+<body>
+<a class="back" href="../index.html">← 返回主页</a>
+<div class="wrap">
+  <h1>面壁者 <b>密语</b></h1>
+  <div class="subtitle">// WALLFACER CIPHER · 计划藏于人心之壁后</div>
+  <div class="panel">
+    <label>输入你真正想说的话 // YOUR TRUE INTENT</label>
+    <textarea id="input" placeholder="例如：我要保护地球 / 明天记得交作业 / 我喜欢你"></textarea>
+    <button class="btn" onclick="gen()">🧠 生成面壁者暗语</button>
+  </div>
+  <div class="panel" id="code">
+    <div class="mtitle">// 面壁计划 · 对外公开的暗语</div>
+    <div class="cipher" id="cipher"></div>
+    <div class="reveal-box">
+      <button class="small" onclick="reveal()">🔓 破壁人：解读其真实含义</button>
+      <div class="reveal-txt" id="revealTxt"></div>
+    </div>
+  </div>
+</div>
+<script>
+// 暗语外壳模板：{X} 会被替换成你输入的话
+const SHELLS=[
+  '在时间的尽头，有人低声说：{X}。但没有人听懂，因为真相藏在第 {N} 层黑暗之后。',
+  '这是一个只对星辰说的秘密：{X}。请把它折叠进四维，藏好，不要回答。',
+  '当三颗太阳同时升起时，记住这句话——{X}——它是我留给宇宙的唯一坐标。',
+  '面壁计划第 {N} 号提案：以「{X}」为幌子，实则布局于人类看不见的维度。',
+  '我凝视深渊已 {N} 年，深渊回我一句：{X}。此语即是钥匙，也是墓志铭。',
+  '若你读到这行字，说明你已是破壁人。我的计划一直是：{X}。',
+  '在黑暗森林里点燃一根火柴，火光拼出四个字之外的意思：{X}。',
+  '把「{X}」写进智子无法读取的那一层意识里，这是面壁者最后的自由。'
+];
+// 破壁人解读模板
+const CRACKS=[
+  '破壁人报告：剥去所有伪装，他的真实意图只有一句——「{X}」。计划暴露。',
+  '经过 {N} 年推演，我确认：这一切复杂的表象，指向的核心就是「{X}」。',
+  '别被辞藻迷惑。他真正想说的，从始至终都是：「{X}」。',
+  '面壁者的墙已被击穿。墙后没有阴谋，只有一句朴素的：「{X}」。'
+];
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+let lastInput='';
+function gen(){
+  const t=document.getElementById('input').value.trim();
+  if(!t){alert('先说出你真正想说的话');return}
+  lastInput=t;
+  const n=Math.floor(Math.random()*400)+80;
+  document.getElementById('cipher').textContent='「 '+pick(SHELLS).replace('{X}',t).replace('{N}',n)+' 」';
+  document.getElementById('code').classList.add('show');
+  const rt=document.getElementById('revealTxt');rt.classList.remove('show');rt.textContent='';
+  document.getElementById('code').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function reveal(){
+  const n=Math.floor(Math.random()*400)+80;
+  const rt=document.getElementById('revealTxt');
+  rt.textContent=pick(CRACKS).replace('{X}',lastInput).replace('{N}',n);
+  rt.classList.add('show');
+}
+</script>
+</body>
+</html>

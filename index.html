@@ -178,6 +178,26 @@ section{padding:clamp(70px,12vh,130px) clamp(20px,6vw,80px);max-width:1100px;mar
   box-shadow:0 0 8px var(--magenta);animation:lb 1.5s infinite}
 @keyframes lb{50%{opacity:.3}}
 
+/* 降维打击 · 二向箔折叠彩蛋 */
+#foil{position:fixed;inset:0;z-index:90;pointer-events:none;display:none}
+#foil.active{display:block;pointer-events:auto}
+.foil-flash{position:absolute;inset:0;background:#fff;opacity:0}
+.foil-flash.go{animation:flash 2.6s ease forwards}
+@keyframes flash{0%{opacity:0}8%{opacity:.9}20%{opacity:0}100%{opacity:0}}
+.foil-line{position:absolute;left:0;top:50%;width:100%;height:100vh;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,var(--cyan),#fff,var(--magenta),transparent);
+  box-shadow:0 0 40px var(--cyan);opacity:0}
+.foil-line.go{animation:fold 2.4s cubic-bezier(.7,0,.3,1) forwards}
+@keyframes fold{0%{opacity:0;height:100vh}15%{opacity:1}100%{opacity:1;height:2px;box-shadow:0 0 60px var(--cyan),0 0 120px var(--magenta)}}
+.foil-txt{position:absolute;left:0;right:0;top:calc(50% + 30px);text-align:center;opacity:0;
+  font-family:"Courier New",monospace;color:var(--cyan);text-shadow:0 0 12px var(--cyan)}
+.foil-txt.go{animation:ftxt 1.5s ease 1.6s forwards}
+@keyframes ftxt{to{opacity:1}}
+.foil-txt .big{font-size:clamp(20px,5vw,32px);font-weight:900;letter-spacing:4px;margin-bottom:10px}
+.foil-txt .btn{margin-top:20px;pointer-events:auto}
+.foldable{transition:transform 2.2s cubic-bezier(.7,0,.3,1),opacity 2.2s,filter 1.6s}
+.foldable.folding{transform:perspective(800px) scaleY(0.002) rotateX(6deg);opacity:.15;filter:blur(2px)}
+
 footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;
   font-family:"Courier New",monospace;border-top:1px solid var(--line);position:relative;z-index:10}
 footer b{color:var(--cyan)}
@@ -267,11 +287,30 @@ footer b{color:var(--cyan)}
         <span class="tag">sci-fi</span>
         <span class="go">进入控制台</span>
       </a>
-      <!-- 占位卡片：做了新工具就把下面这个替换掉 -->
-      <div class="card" style="opacity:.5">
-        <h3>🔧 更多工具</h3>
-        <p>正在打造中…… 敬请期待。</p>
-        <span class="tag">soon</span>
+      <a class="card" href="tools/cosmic-age.html">
+        <h3>🌌 宇宙年龄换算器</h3>
+        <p>输入出生日期，换算成绕太阳的圈数、光年距离、随银河系飞行的公里数，以及你经历过几次乱纪元。</p>
+        <span class="tag">space</span>
+        <span class="go">开始换算</span>
+      </a>
+      <a class="card" href="tools/sophon.html">
+        <h3>👁️ 智子监控台</h3>
+        <p>伪装成实时监听地球通讯的智子终端，滚动拦截信号、锁定坐标、评估威胁等级。纯搞笑摸鱼神器。</p>
+        <span class="tag">terminal</span>
+        <span class="go">开始监听</span>
+      </a>
+      <a class="card" href="tools/wallfacer.html">
+        <h3>🧠 面壁者密语生成器</h3>
+        <p>输入你真正想说的话，生成一句意味深长的「面壁计划」暗语，还能让破壁人解读其真实含义。</p>
+        <span class="tag">cipher</span>
+        <span class="go">生成暗语</span>
+      </a>
+      <!-- 降维打击彩蛋：点击不跳转，而是把整个主页折叠成一条线 -->
+      <div class="card" id="foilCard" style="cursor:pointer;border-color:rgba(255,0,229,.4)">
+        <h3>☄️ 降维打击</h3>
+        <p>投放一张二向箔，把这个三维网页折叠进二维。⚠ 慎点，后果自负。</p>
+        <span class="tag" style="color:var(--magenta);border-color:rgba(255,0,229,.4)">danger</span>
+        <span class="go" style="color:var(--magenta)">投放二向箔</span>
       </div>
     </div>
   </section>
@@ -319,6 +358,17 @@ footer b{color:var(--cyan)}
   </div>
   <div style="margin-top:16px">© <span id="year"></span> <b>TENEEDUU</b> · 来自三体的问候 · Powered by GitHub Pages</div>
 </footer>
+
+<!-- 降维打击覆盖层 -->
+<div id="foil">
+  <div class="foil-flash" id="foilFlash"></div>
+  <div class="foil-line" id="foilLine"></div>
+  <div class="foil-txt" id="foilTxt">
+    <div class="big">该二维化了</div>
+    <div>这个网页已被折叠进二维平面。</div>
+    <a class="btn alt" href="#" onclick="location.reload();return false">🔄 重启三维空间</a>
+  </div>
+</div>
 
 <!-- 声音开关 -->
 <button class="sound-btn" id="soundBtn" title="开启/关闭背景音效">🔇</button>
@@ -453,6 +503,22 @@ document.getElementById('year').textContent=new Date().getFullYear();
     el.addEventListener('click',()=>window.__blip(990));
   });
 })();
+
+/* ---------- 8. 降维打击 · 二向箔折叠彩蛋 ---------- */
+document.getElementById('foilCard').addEventListener('click',function(){
+  if(window.__blip)window.__blip(220);
+  const foil=document.getElementById('foil');
+  foil.classList.add('active');
+  document.getElementById('foilFlash').classList.add('go');
+  // 稍等一下再把网页主体折叠，配合白光闪烁
+  setTimeout(()=>{
+    ['nav','main','footer'].forEach(sel=>{
+      const el=document.querySelector(sel);if(el){el.classList.add('foldable');el.classList.add('folding');}
+    });
+    document.getElementById('foilLine').classList.add('go');
+    document.getElementById('foilTxt').classList.add('go');
+  },300);
+});
 
 /* ---------- 7. 访问计数器（Abacus 免费无需注册服务） ---------- */
 (function(){
