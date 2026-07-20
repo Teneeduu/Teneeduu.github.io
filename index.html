@@ -161,6 +161,23 @@ section{padding:clamp(70px,12vh,130px) clamp(20px,6vw,80px);max-width:1100px;mar
   box-shadow:0 8px 30px rgba(255,0,229,.2)}
 .social .ico{font-size:20px}
 
+/* 声音开关按钮 */
+.sound-btn{position:fixed;right:20px;bottom:20px;z-index:50;width:52px;height:52px;border-radius:50%;
+  border:1px solid var(--cyan);background:rgba(5,6,10,.8);color:var(--cyan);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:.25s;backdrop-filter:blur(6px);
+  box-shadow:0 0 16px rgba(0,240,255,.25)}
+.sound-btn:hover{background:var(--cyan);color:#02121a;box-shadow:0 0 26px var(--cyan);transform:scale(1.08)}
+.sound-btn.on{border-color:var(--magenta);color:var(--magenta);box-shadow:0 0 18px rgba(255,0,229,.4)}
+.sound-btn.on:hover{background:var(--magenta);color:#fff}
+/* 访问计数器 */
+.visitor{margin-top:16px;display:inline-flex;align-items:center;gap:10px;padding:8px 16px;
+  border:1px solid var(--line);border-radius:20px;background:rgba(0,240,255,.04);
+  font-family:"Courier New",monospace;font-size:13px;color:var(--muted)}
+.visitor b{color:var(--cyan);font-size:16px;text-shadow:0 0 10px var(--cyan);font-variant-numeric:tabular-nums}
+.visitor .live{width:8px;height:8px;border-radius:50%;background:var(--magenta);
+  box-shadow:0 0 8px var(--magenta);animation:lb 1.5s infinite}
+@keyframes lb{50%{opacity:.3}}
+
 footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;
   font-family:"Courier New",monospace;border-top:1px solid var(--line);position:relative;z-index:10}
 footer b{color:var(--cyan)}
@@ -213,17 +230,18 @@ footer b{color:var(--cyan)}
       <h2 class="sec-title">关于 <b>我</b></h2>
     </div>
     <div class="about-wrap reveal">
-      <!-- 头像：这里用了首字母 T，想换成图片见下方“如何更新”说明 -->
-      <div class="avatar">T</div>
+      <!-- 头像：现在是骷髅 emoji，想换成图片见“如何更新”说明 -->
+      <div class="avatar">💀</div>
       <div class="about-text">
         <!-- ↓↓↓ 改这里的自我介绍 ↓↓↓ -->
-        <p>你好，我是 <b style="color:var(--cyan)">Teneeduu</b>。一个喜欢折腾代码、把想法变成小工具的人。</p>
-        <p>这个网站是我的赛博空间，收录我做的小工具和项目。欢迎四处逛逛。</p>
+        <p>你好，地球人。我是 <b style="color:var(--cyan)">Teneeduu</b> —— 一个潜伏在这颗蓝色星球上的<b style="color:var(--magenta)">三体星人</b> 👽。</p>
+        <p>白天伪装成写代码的普通碳基生物，夜里在这片赛博空间里等待舰队抵达。这里收录我做的小工具和项目，随便逛逛，<b style="color:var(--cyan)">但不要回答</b>。</p>
         <!-- ↑↑↑ 改上面的自我介绍 ↑↑↑ -->
         <div class="skills">
           <!-- 技能标签，随意增删 -->
-          <span>JavaScript</span><span>HTML/CSS</span><span>Python</span>
-          <span>创意编程</span><span>产品思维</span>
+          <span>☢️ 制造核弹</span><span>🛸 曲率驱动</span><span>👁️ 智子监听</span>
+          <span>💧 脱水/浸泡</span><span>🌌 黑暗森林生存</span><span>📐 二向箔折叠</span>
+          <span>&lt;/&gt; 伪装成程序员</span>
         </div>
       </div>
     </div>
@@ -242,6 +260,12 @@ footer b{color:var(--cyan)}
         <p>输入出生日期，生成你的生命数据：已活天数、精确年龄、天数里程碑时间轴、人生进度条和趣味统计。</p>
         <span class="tag">dashboard</span>
         <span class="go">打开工具</span>
+      </a>
+      <a class="card" href="tools/trisolaris.html">
+        <h3>👽 三体控制台</h3>
+        <p>三体星人专用终端：舰队抵达倒计时、黑暗森林格言广播、纪元判定器、摩斯电码坐标发射站。</p>
+        <span class="tag">sci-fi</span>
+        <span class="go">进入控制台</span>
       </a>
       <!-- 占位卡片：做了新工具就把下面这个替换掉 -->
       <div class="card" style="opacity:.5">
@@ -290,8 +314,14 @@ footer b{color:var(--cyan)}
 </main>
 
 <footer>
-  © <span id="year"></span> <b>TENEEDUU</b> · 用 ❤ 和 &lt;code/&gt; 打造 · Powered by GitHub Pages
+  <div class="visitor">
+    <span class="live"></span> 已有 <b id="visits">···</b> 个地球人访问过这里
+  </div>
+  <div style="margin-top:16px">© <span id="year"></span> <b>TENEEDUU</b> · 来自三体的问候 · Powered by GitHub Pages</div>
 </footer>
+
+<!-- 声音开关 -->
+<button class="sound-btn" id="soundBtn" title="开启/关闭背景音效">🔇</button>
 
 <script>
 /* =========================================================
@@ -330,7 +360,7 @@ footer b{color:var(--cyan)}
 /* ---------- 2. HERO 打字机 ---------- */
 function startTyping(){
   // ↓ 想改这几句轮播文字，改这个数组 ↓
-  const phrases=['热爱代码与创造 ⚡','把想法变成工具 🔧','探索赛博空间 🌐','Just keep building.'];
+  const phrases=['潜伏于地球的三体星人 👽','副业：制造核弹 ☢️','主业：等待舰队抵达 🛸','不要回答！不要回答！不要回答！'];
   const el=document.getElementById('typed');
   let pi=0,ci=0,del=false;
   (function tick(){
@@ -382,6 +412,59 @@ function revealInit(){
 
 /* ---------- 5. 页脚年份 ---------- */
 document.getElementById('year').textContent=new Date().getFullYear();
+
+/* ---------- 6. 背景音效（Web Audio 实时合成，无音频文件） ---------- */
+(function(){
+  const btn=document.getElementById('soundBtn');
+  let ctx,master,drone=[],on=false;
+  function build(){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;lp.connect(master);
+    // 两个低频振荡器叠出赛博环境嗡鸣
+    [55,55.4,110].forEach((f,i)=>{
+      const o=ctx.createOscillator();o.type=i===2?'triangle':'sawtooth';o.frequency.value=f;
+      const g=ctx.createGain();g.gain.value=i===2?.04:.08;o.connect(g);g.connect(lp);o.start();drone.push(o);
+    });
+    // 缓慢的滤波器扫动，制造“呼吸感”
+    const lfo=ctx.createOscillator();lfo.frequency.value=.06;
+    const lg=ctx.createGain();lg.gain.value=180;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+  }
+  function toggle(){
+    if(!ctx)build();
+    if(ctx.state==='suspended')ctx.resume();
+    on=!on;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.linearRampToValueAtTime(on?.5:0,ctx.currentTime+.6);
+    btn.textContent=on?'🔊':'🔇';btn.classList.toggle('on',on);
+  }
+  btn.addEventListener('click',toggle);
+  // 悬停/点击音效（仅在开启时响）
+  window.__blip=function(freq){
+    if(!on||!ctx)return;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='square';o.frequency.value=freq;g.gain.value=.0;
+    o.connect(g);g.connect(ctx.destination);
+    const t=ctx.currentTime;g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);
+    o.start(t);o.stop(t+.13);
+  };
+  document.querySelectorAll('nav a,.btn,.card,.social a').forEach(el=>{
+    el.addEventListener('mouseenter',()=>window.__blip(660));
+    el.addEventListener('click',()=>window.__blip(990));
+  });
+})();
+
+/* ---------- 7. 访问计数器（Abacus 免费无需注册服务） ---------- */
+(function(){
+  const el=document.getElementById('visits');
+  // 命名空间/键，想“重置”计数改这里的 key 即可
+  const url='https://abacus.jasoncameron.dev/hit/teneeduu-github-io/homepage';
+  fetch(url).then(r=>r.json()).then(d=>{
+    const n=d.value||0;let c=0;const step=Math.max(1,Math.ceil(n/40));
+    (function up(){c=Math.min(n,c+step);el.textContent=c.toLocaleString('en-US');
+      if(c<n)requestAnimationFrame(up);})();
+  }).catch(()=>{el.textContent='∞';el.parentElement.style.opacity='.6';});
+})();
 </script>
 </body>
 </html>

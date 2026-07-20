@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三体控制台 // Trisolaris Console</title>
+<style>
+:root{--cyan:#00f0ff;--magenta:#ff00e5;--bg:#05060a;--panel:rgba(10,14,24,.65);
+  --line:rgba(0,240,255,.25);--text:#d6f7ff;--muted:#7c8ba1;--warn:#ff3b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",-apple-system,"Microsoft YaHei",sans-serif;background:var(--bg);
+  color:var(--text);min-height:100vh;padding:28px 16px 60px;overflow-x:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,240,255,.025) 3px,transparent 4px)}
+a{color:var(--cyan);text-decoration:none}
+.back{display:block;max-width:600px;margin:0 auto 20px;font-family:"Courier New",monospace;font-size:13px;opacity:.8}
+.back:hover{text-shadow:0 0 8px var(--cyan)}
+.wrap{max-width:600px;margin:0 auto}
+h1{text-align:center;font-size:clamp(24px,6vw,36px);font-weight:900;letter-spacing:2px;color:#fff;
+  text-shadow:0 0 18px rgba(0,240,255,.5)}
+h1 b{color:var(--cyan)}
+.subtitle{text-align:center;color:var(--magenta);font-family:"Courier New",monospace;font-size:12px;
+  letter-spacing:3px;margin:6px 0 26px;text-shadow:0 0 8px var(--magenta)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;
+  margin-bottom:18px;position:relative;overflow:hidden;backdrop-filter:blur(6px)}
+.panel::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta))}
+.mtitle{font-size:13px;color:var(--magenta);letter-spacing:2px;font-family:"Courier New",monospace;
+  margin-bottom:16px;text-shadow:0 0 8px var(--magenta)}
+.btn{width:100%;padding:14px;background:linear-gradient(90deg,var(--cyan),var(--magenta));color:#02121a;
+  border:none;border-radius:10px;font-size:15px;font-weight:800;letter-spacing:2px;cursor:pointer;transition:.2s}
+.btn:hover{box-shadow:0 0 24px rgba(0,240,255,.5);transform:translateY(-2px)}
+/* 倒计时 */
+.count{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center}
+.count .u{background:rgba(0,240,255,.05);border:1px solid var(--line);border-radius:10px;padding:14px 4px}
+.count .u .n{font-size:clamp(22px,7vw,34px);font-weight:900;color:var(--cyan);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 16px rgba(0,240,255,.4)}
+.count .u .l{font-size:11px;color:var(--muted);font-family:"Courier New",monospace;margin-top:6px;letter-spacing:1px}
+.cnote{text-align:center;color:var(--muted);font-size:12px;margin-top:14px;font-family:"Courier New",monospace}
+/* 格言 */
+.quote{min-height:70px;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:18px;line-height:1.7;color:#fff;padding:8px 0 18px;font-weight:600}
+.quote.g{animation:gl .3s}
+@keyframes gl{0%{transform:translate(-2px);color:var(--cyan)}50%{transform:translate(2px);color:var(--magenta)}100%{transform:none}}
+/* 纪元 */
+#eraOut{text-align:center;min-height:90px;display:none;padding-bottom:10px}
+#eraOut.show{display:block;animation:fade .4s}
+@keyframes fade{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+#eraOut .era{font-size:30px;font-weight:900;letter-spacing:2px}
+#eraOut .desc{color:var(--muted);font-size:14px;margin-top:10px}
+.safe{color:var(--cyan);text-shadow:0 0 16px var(--cyan)}
+.chaos{color:var(--warn);text-shadow:0 0 16px var(--warn)}
+/* 摩斯 */
+textarea{width:100%;padding:14px;background:rgba(0,240,255,.05);border:1px solid var(--line);border-radius:10px;
+  color:var(--text);font-size:15px;outline:none;resize:vertical;min-height:70px;font-family:inherit}
+textarea:focus{border-color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.2)}
+.morse-out{margin-top:14px;padding:14px;background:#000;border:1px solid var(--line);border-radius:10px;
+  font-family:"Courier New",monospace;font-size:20px;color:var(--cyan);word-break:break-all;min-height:30px;
+  letter-spacing:2px;text-shadow:0 0 8px var(--cyan)}
+.warn{color:var(--warn);font-size:12px;text-align:center;margin-top:12px;font-family:"Courier New",monospace;
+  letter-spacing:1px;animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.4}}
+</style>
+</head>
+<body>
+<a class="back" href="../index.html">← 返回主页</a>
+<div class="wrap">
+  <h1>三体 <b>控制台</b></h1>
+  <div class="subtitle">// TRISOLARIS CONSOLE · 仅限三体星人使用</div>
+
+  <!-- 1. 舰队倒计时 -->
+  <div class="panel">
+    <div class="mtitle">// 🛸 三体舰队抵达地球倒计时</div>
+    <div class="count">
+      <div class="u"><div class="n" id="cd">-</div><div class="l">天 DAYS</div></div>
+      <div class="u"><div class="n" id="ch">-</div><div class="l">时 HRS</div></div>
+      <div class="u"><div class="n" id="cm">-</div><div class="l">分 MIN</div></div>
+      <div class="u"><div class="n" id="cs">-</div><div class="l">秒 SEC</div></div>
+    </div>
+    <div class="cnote">预计抵达：公元 <b id="arriveYear" style="color:var(--cyan)"></b> 年 · 请保持隐蔽</div>
+  </div>
+
+  <!-- 2. 黑暗森林格言 -->
+  <div class="panel">
+    <div class="mtitle">// 🌌 接收宇宙广播</div>
+    <div class="quote" id="quote">点击下方按钮，接收来自黑暗森林的一条讯息……</div>
+    <button class="btn" onclick="newQuote()">📡 接收宇宙广播</button>
+  </div>
+
+  <!-- 3. 纪元判定 -->
+  <div class="panel">
+    <div class="mtitle">// ☀️ 观测太阳 · 判定纪元</div>
+    <div id="eraOut"><div class="era" id="eraName"></div><div class="desc" id="eraDesc"></div></div>
+    <button class="btn" onclick="observeSun()">🔭 观测太阳</button>
+  </div>
+
+  <!-- 4. 黑暗森林广播站 -->
+  <div class="panel">
+    <div class="mtitle">// 📡 黑暗森林广播站（文字 → 摩斯电码）</div>
+    <textarea id="morseIn" placeholder="输入要向宇宙发送的信息……（试试 SOS 或 你的名字拼音）" oninput="toMorse()"></textarea>
+    <div class="morse-out" id="morseOut">· − · ·</div>
+    <div class="warn">⚠ 警告：向宇宙暴露坐标将招致降维打击</div>
+  </div>
+</div>
+
+<script>
+/* 1. 舰队倒计时 —— 目标年份，可改 */
+const ARRIVE_YEAR=2400;
+document.getElementById('arriveYear').textContent=ARRIVE_YEAR;
+const target=new Date(ARRIVE_YEAR,0,1,0,0,0).getTime();
+function tick(){
+  let diff=Math.max(0,target-Date.now());const s=Math.floor(diff/1000);
+  document.getElementById('cd').textContent=Math.floor(s/86400).toLocaleString('en-US');
+  document.getElementById('ch').textContent=String(Math.floor(s%86400/3600)).padStart(2,'0');
+  document.getElementById('cm').textContent=String(Math.floor(s%3600/60)).padStart(2,'0');
+  document.getElementById('cs').textContent=String(s%60).padStart(2,'0');
+}
+tick();setInterval(tick,1000);
+
+/* 2. 黑暗森林格言 —— 想加句子就往数组里加 */
+const QUOTES=[
+  '不要回答！不要回答！不要回答！',
+  '宇宙就是一座黑暗森林，每个文明都是带枪的猎人。',
+  '弱小和无知不是生存的障碍，傲慢才是。',
+  '给岁月以文明，而不是给文明以岁月。',
+  '毁灭你，与你何干。',
+  '我们都是阴沟里的虫子，但总还是得有人仰望星空。',
+  '低维度的美丽，高维度的死寂。',
+  '藏好自己，做好清理。',
+  '前进！前进！！不择手段地前进！！！',
+  '这里的一切都是在为一个目的服务：生存。',
+  '主不在乎。',
+  '失去人性，失去很多；失去兽性，失去一切。'
+];
+function newQuote(){
+  const q=document.getElementById('quote');
+  q.classList.remove('g');void q.offsetWidth;q.classList.add('g');
+  q.textContent='「 '+QUOTES[Math.floor(Math.random()*QUOTES.length)]+' 」';
+}
+
+/* 3. 纪元判定 */
+const CHAOS=['立刻脱水！大旱将至，太阳将连续升起。','三日凌空！文明第 N 次被烈焰吞没。','严寒突袭，一切都将被冻结成雕像。','飞星不动，乱纪元无限延长……'];
+const STABLE=['气候温和，可以浸泡、耕作、繁衍。','太阳规律升落，尽情建设你的文明吧。','难得的黄金时代，抓紧发展科技。','恒纪元将持续 XX 年，这是文明的机遇。'];
+function observeSun(){
+  const o=document.getElementById('eraOut'),n=document.getElementById('eraName'),d=document.getElementById('eraDesc');
+  o.classList.remove('show');void o.offsetWidth;o.classList.add('show');
+  if(Math.random()<0.55){n.textContent='☀️ 乱纪元';n.className='era chaos';
+    d.textContent=CHAOS[Math.floor(Math.random()*CHAOS.length)];}
+  else{n.textContent='🌤️ 恒纪元';n.className='era safe';
+    d.textContent=STABLE[Math.floor(Math.random()*STABLE.length)];}
+}
+
+/* 4. 摩斯电码 */
+const M={A:'·−',B:'−···',C:'−·−·',D:'−··',E:'·',F:'··−·',G:'−−·',H:'····',I:'··',J:'·−−−',K:'−·−',L:'·−··',M:'−−',N:'−·',O:'−−−',P:'·−−·',Q:'−−·−',R:'·−·',S:'···',T:'−',U:'··−',V:'···−',W:'·−−',X:'−··−',Y:'−·−−',Z:'−−··','0':'−−−−−','1':'·−−−−','2':'··−−−','3':'···−−','4':'····−','5':'·····','6':'−····','7':'−−···','8':'−−−··','9':'−−−−·','.':'·−·−·−',',':'−−··−−','?':'··−−··','!':'−·−·−−','/':'−··−·','@':'·−−·−·'};
+function toMorse(){
+  const t=document.getElementById('morseIn').value.toUpperCase();
+  const out=t.split('').map(c=>c===' '?'/':(M[c]||'')).filter(x=>x).join(' ');
+  document.getElementById('morseOut').textContent=out||'· − · ·';
+}
+</script>
+</body>
+</html>
