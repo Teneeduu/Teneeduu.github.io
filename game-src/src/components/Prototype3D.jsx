@@ -9,12 +9,24 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 const rand = (a, b) => a + Math.random() * (b - a)
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
-// 物体类别：文件名 / 数量 / 吞噬半径 / 门槛 / 目标直径 / 移动速度 / 兜底几何体
+// 路网：横竖马路的坐标（与场景里画的道路对齐，均为 100 的整数倍）
+const ROADS = [-300, -200, -100, 0, 100, 200, 300]
+
+// 让模型车头朝向行驶方向（forwardAlongX: 模型长边在 X 轴）
+function faceDir(node, vx, vz, forwardAlongX) {
+  node.rotation.y = forwardAlongX ? Math.atan2(-vz, vx) : Math.atan2(vx, vz)
+}
+
+// 物体类别：文件 / 数量 / 吞噬半径 / 门槛 / 目标直径 / 移动 / 兜底几何体
+// car 用多车型随机(files)，且 road:true 表示沿马路行驶
 const SPECS = {
   building: { file: 'building.glb', count: 45, radius: 15, threshold: 24, targetD: 30, fallback: makeBuilding },
   house: { file: 'house.glb', count: 30, radius: 11, threshold: 16, targetD: 24, fallback: makeHouse },
   tree: { file: 'tree.glb', count: 60, radius: 6, threshold: 9, targetD: 16, fallback: makeTree },
-  car: { file: 'car.glb', count: 35, radius: 5, threshold: 14, targetD: 12, mobile: 26, fallback: makeCar },
+  car: {
+    files: ['sedan.glb', 'suv.glb', 'taxi.glb', 'hatchback-sports.glb', 'van.glb', 'delivery.glb'],
+    count: 34, radius: 5, threshold: 14, targetD: 13, mobile: 26, road: true, fallback: makeCar,
+  },
   person: { file: 'person.glb', count: 70, radius: 2.2, threshold: 8, targetD: 6, mobile: 12, fallback: makePerson },
 }
 
@@ -59,6 +71,7 @@ function makeCar() {
   const cab = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4.4), new THREE.MeshStandardMaterial({ color: '#cfe8ff' }))
   cab.position.set(-0.5, 6, 0)
   g.add(body, cab)
+  g.userData.forwardAlongX = true // 车身长边在 X 轴
   return g
 }
 function makePerson() {
@@ -80,6 +93,7 @@ function fitModel(scene, targetD) {
   const maxXZ = Math.max(size.x, size.z) || 1
   const s = targetD / maxXZ
   const g = new THREE.Group()
+  g.userData.forwardAlongX = size.x > size.z // 长边所在轴即车头方向
   obj.scale.setScalar(s)
   // 重新计算缩放后包围盒以对齐地面/中心
   const box2 = new THREE.Box3().setFromObject(obj)
@@ -153,15 +167,31 @@ export default function Prototype3D({ onExit }) {
       node.traverse((c) => {
         if (c.isMesh) c.castShadow = true
       })
-      node.position.set(rand(-330, 330), 0, rand(-330, 330))
-      node.rotation.y = rand(0, Math.PI * 2)
       scene.add(node)
-      const o = { mesh: node, radius: spec.radius, threshold: spec.threshold, falling: 0, mobile: spec.mobile || 0, vx: 0, vz: 0, wander: 0 }
-      if (o.mobile) {
+      const o = {
+        mesh: node, radius: spec.radius, threshold: spec.threshold, falling: 0,
+        mobile: spec.mobile || 0, vx: 0, vz: 0, wander: 0,
+        road: !!spec.road, forwardAlongX: node.userData.forwardAlongX || false,
+      }
+      if (spec.road) {
+        // 放到某条马路的车道上，沿马路直行
+        o.axis = Math.random() < 0.5 ? 'x' : 'z'
+        o.lane = pick(ROADS)
+        o.dir = Math.random() < 0.5 ? 1 : -1
+        o.perp = o.dir * 4 // 靠一侧行驶（双向车道）
+        o.roadSpeed = spec.mobile
+        const moving = rand(-330, 330)
+        if (o.axis === 'x') node.position.set(moving, 0, o.lane + o.perp)
+        else node.position.set(o.lane + o.perp, 0, moving)
+      } else if (o.mobile) {
+        node.position.set(rand(-330, 330), 0, rand(-330, 330))
         const a = rand(0, Math.PI * 2)
         o.vx = Math.cos(a) * o.mobile
         o.vz = Math.sin(a) * o.mobile
         o.wander = rand(0, 3)
+      } else {
+        node.position.set(rand(-330, 330), 0, rand(-330, 330))
+        node.rotation.y = rand(0, Math.PI * 2)
       }
       objects.push(o)
     }
@@ -233,23 +263,25 @@ export default function Prototype3D({ onExit }) {
     const base = (import.meta.env.BASE_URL || './') + 'models/'
     const loaded = {}
     const usable = []
-    Promise.all(
-      Object.entries(SPECS).map(([key, spec]) =>
-        loader
-          .loadAsync(base + spec.file)
-          .then((gltf) => {
-            loaded[key] = gltf.scene
-            usable.push(key)
-          })
-          .catch(() => {
-            loaded[key] = null
-          })
-      )
-    ).then(() => {
+    const tasks = []
+    for (const [key, spec] of Object.entries(SPECS)) {
+      loaded[key] = []
+      const files = spec.files || [spec.file]
+      for (const f of files) {
+        tasks.push(
+          loader
+            .loadAsync(base + f)
+            .then((gltf) => loaded[key].push(gltf.scene))
+            .catch(() => {})
+        )
+      }
+    }
+    Promise.all(tasks).then(() => {
       if (cancelled) return
       for (const [key, spec] of Object.entries(SPECS)) {
+        if (loaded[key].length) usable.push(key)
         for (let i = 0; i < spec.count; i++) {
-          const node = loaded[key] ? fitModel(loaded[key], spec.targetD) : spec.fallback()
+          const node = loaded[key].length ? fitModel(pick(loaded[key]), spec.targetD) : spec.fallback()
           addInstance(node, spec)
         }
       }
@@ -296,33 +328,52 @@ export default function Prototype3D({ onExit }) {
       ringMesh.position.set(hole.x, 0.42, hole.z)
       ringMesh.scale.setScalar(hole.r)
 
-      // 行人/车：游走 + 逃跑
+      // 车沿马路直行；行人自由游走 + 逃跑
       for (const o of objects) {
-        if (o.eaten || o.falling > 0 || !o.mobile) continue
-        const dx = o.mesh.position.x - hole.x
-        const dz = o.mesh.position.z - hole.z
-        const dist = Math.hypot(dx, dz) || 1
-        const fear = o.mobile * 3 + hole.r
-        if (dist < fear) {
-          const flee = o.mobile * 2.4
-          o.vx += ((dx / dist) * flee - o.vx) * 0.15
-          o.vz += ((dz / dist) * flee - o.vz) * 0.15
-        } else {
-          o.wander -= dt
-          if (o.wander <= 0) {
-            const a = rand(0, Math.PI * 2)
-            o.vx = Math.cos(a) * o.mobile
-            o.vz = Math.sin(a) * o.mobile
-            o.wander = rand(1.5, 4)
+        if (o.eaten || o.falling > 0) continue
+        if (o.road) {
+          let mv = o.axis === 'x' ? o.mesh.position.x : o.mesh.position.z
+          mv += o.roadSpeed * o.dir * dt
+          if (mv > 335 || mv < -335) {
+            o.dir *= -1 // 到边界掉头
+            o.perp = o.dir * 4
+            mv = Math.max(-335, Math.min(335, mv))
           }
+          if (o.axis === 'x') {
+            o.mesh.position.x = mv
+            o.mesh.position.z = o.lane + o.perp
+            faceDir(o.mesh, o.dir, 0, o.forwardAlongX)
+          } else {
+            o.mesh.position.z = mv
+            o.mesh.position.x = o.lane + o.perp
+            faceDir(o.mesh, 0, o.dir, o.forwardAlongX)
+          }
+        } else if (o.mobile) {
+          const dx = o.mesh.position.x - hole.x
+          const dz = o.mesh.position.z - hole.z
+          const dist = Math.hypot(dx, dz) || 1
+          const fear = o.mobile * 3 + hole.r
+          if (dist < fear) {
+            const flee = o.mobile * 2.4
+            o.vx += ((dx / dist) * flee - o.vx) * 0.15
+            o.vz += ((dz / dist) * flee - o.vz) * 0.15
+          } else {
+            o.wander -= dt
+            if (o.wander <= 0) {
+              const a = rand(0, Math.PI * 2)
+              o.vx = Math.cos(a) * o.mobile
+              o.vz = Math.sin(a) * o.mobile
+              o.wander = rand(1.5, 4)
+            }
+          }
+          o.mesh.position.x += o.vx * dt
+          o.mesh.position.z += o.vz * dt
+          if (o.mesh.position.x < -355 || o.mesh.position.x > 355) o.vx *= -1
+          if (o.mesh.position.z < -355 || o.mesh.position.z > 355) o.vz *= -1
+          o.mesh.position.x = Math.max(-355, Math.min(355, o.mesh.position.x))
+          o.mesh.position.z = Math.max(-355, Math.min(355, o.mesh.position.z))
+          o.mesh.rotation.y = Math.atan2(o.vx, o.vz)
         }
-        o.mesh.position.x += o.vx * dt
-        o.mesh.position.z += o.vz * dt
-        if (o.mesh.position.x < -355 || o.mesh.position.x > 355) o.vx *= -1
-        if (o.mesh.position.z < -355 || o.mesh.position.z > 355) o.vz *= -1
-        o.mesh.position.x = Math.max(-355, Math.min(355, o.mesh.position.x))
-        o.mesh.position.z = Math.max(-355, Math.min(355, o.mesh.position.z))
-        o.mesh.rotation.y = Math.atan2(o.vx, o.vz)
       }
 
       // 吞噬

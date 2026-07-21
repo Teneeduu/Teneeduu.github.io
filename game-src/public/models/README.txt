@@ -4,8 +4,10 @@
   building.glb   高楼
   house.glb      房子
   tree.glb       树
-  car.glb        汽车
   person.glb     人
+  汽车：已内置 Kenney 车包多款车型，会随机出现并沿马路行驶
+        (sedan/suv/taxi/hatchback-sports/van/delivery.glb)
+        想换/加车型，丢同名或新的 .glb 进来告诉我即可
 
 不用自己建模，推荐下载免费低多边形模型包（免费可商用）：
   · Kenney.nl        → City Kit / Nature Kit / Car Kit（最推荐，专为这类游戏做）
