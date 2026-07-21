@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 // 真 3D 单场景原型。
 // 关键：如果 public/models/ 里放了对应 .glb，就用你的模型；否则用内置几何体兜底。
@@ -22,20 +21,20 @@ function faceDir(node, vx, vz, forwardAlongX) {
 // files 数组 = 多模型随机；car road:true 表示沿马路行驶
 const SPECS = {
   building: {
-    files: ['sky-a.glb', 'sky-b.glb', 'sky-c.glb', 'sky-d.glb', 'sky-e.glb', 'com-a.glb', 'com-b.glb', 'com-c.glb', 'com-d.glb', 'com-e.glb'],
+    files: ['com/sky-a.glb', 'com/sky-b.glb', 'com/sky-c.glb', 'com/sky-d.glb', 'com/sky-e.glb', 'com/com-a.glb', 'com/com-b.glb', 'com/com-c.glb', 'com/com-d.glb', 'com/com-e.glb'],
     count: 40, radius: 15, threshold: 24, targetH: 60, fallback: makeBuilding,
   },
   house: {
-    files: ['ind-a.glb', 'ind-b.glb', 'ind-c.glb', 'ind-d.glb', 'ind-e.glb', 'ind-f.glb'],
+    files: ['ind/ind-a.glb', 'ind/ind-b.glb', 'ind/ind-c.glb', 'ind/ind-d.glb', 'ind/ind-e.glb', 'ind/ind-f.glb'],
     count: 28, radius: 11, threshold: 16, targetH: 24, fallback: makeHouse,
   },
   tree: { file: 'tree.glb', count: 55, radius: 6, threshold: 9, targetH: 18, fallback: makeTree },
   car: {
-    files: ['sedan.glb', 'suv.glb', 'taxi.glb', 'hatchback-sports.glb', 'van.glb', 'delivery.glb'],
+    files: ['car/sedan.glb', 'car/suv.glb', 'car/taxi.glb', 'car/hatchback-sports.glb', 'car/van.glb', 'car/delivery.glb'],
     count: 34, radius: 5, threshold: 14, targetH: 13, mobile: 26, road: true, fallback: makeCar,
   },
   person: {
-    files: ['char-male-a.glb', 'char-male-b.glb', 'char-male-c.glb', 'char-male-d.glb', 'char-female-a.glb', 'char-female-b.glb', 'char-female-c.glb', 'char-female-d.glb'],
+    files: ['char/char-male-a.glb', 'char/char-male-b.glb', 'char/char-male-c.glb', 'char/char-male-d.glb', 'char/char-female-a.glb', 'char/char-female-b.glb', 'char/char-female-c.glb', 'char/char-female-d.glb'],
     count: 70, radius: 2.2, threshold: 8, targetH: 9, mobile: 12, fallback: makePerson,
   },
 }
@@ -96,7 +95,20 @@ function makePerson() {
 
 // 把任意尺寸的模型缩放到 targetH(整体最大尺寸)、底部落在 y=0、水平居中
 function fitModel(scene, targetH) {
-  const obj = skeletonClone(scene) // 支持带骨架的角色模型
+  const obj = scene.clone(true)
+  // 蒙皮网格 → 静态网格：保留造型、丢弃骨架，避免骨架克隆导致渲染器崩溃
+  const skinned = []
+  obj.traverse((n) => {
+    if (n.isSkinnedMesh) skinned.push(n)
+  })
+  for (const sm of skinned) {
+    const m = new THREE.Mesh(sm.geometry, sm.material)
+    m.position.copy(sm.position)
+    m.quaternion.copy(sm.quaternion)
+    m.scale.copy(sm.scale)
+    sm.parent.add(m)
+    sm.parent.remove(sm)
+  }
   const box = new THREE.Box3().setFromObject(obj)
   const size = new THREE.Vector3()
   box.getSize(size)
@@ -112,6 +124,9 @@ function fitModel(scene, targetH) {
   obj.position.x -= center.x
   obj.position.z -= center.z
   obj.position.y -= box2.min.y
+  obj.traverse((n) => {
+    if (n.isMesh) n.frustumCulled = false // 缩放后防止被错误视锥剔除
+  })
   g.add(obj)
   return g
 }
@@ -291,8 +306,13 @@ export default function Prototype3D({ onExit }) {
       for (const [key, spec] of Object.entries(SPECS)) {
         if (loaded[key].length) usable.push(key)
         for (let i = 0; i < spec.count; i++) {
-          const node = loaded[key].length ? fitModel(pick(loaded[key]), spec.targetD) : spec.fallback()
-          addInstance(node, spec)
+          try {
+            const node = loaded[key].length ? fitModel(pick(loaded[key]), spec.targetH) : spec.fallback()
+            addInstance(node, spec)
+          } catch (err) {
+            console.error('生成模型失败，改用兜底几何体:', key, err)
+            addInstance(spec.fallback(), spec)
+          }
         }
       }
       setUsingModels(usable)
