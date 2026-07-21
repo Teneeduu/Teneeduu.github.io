@@ -320,6 +320,22 @@ body {
   padding: 6px 12px;
   border-radius: 16px;
   backdrop-filter: blur(6px);
+  max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proto-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-weight: 700;
+  z-index: 20;
 }
 .score-box {
   text-align: right;
