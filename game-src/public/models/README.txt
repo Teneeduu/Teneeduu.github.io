@@ -1,13 +1,16 @@
 把 3D 模型文件（.glb 格式）放到这个文件夹，游戏会自动使用它们替换默认的几何体。
 
-需要的文件名（放哪个就替换哪个，不放就用默认几何体兜底）：
-  building.glb   高楼
-  house.glb      房子
-  tree.glb       树
-  person.glb     人
-  汽车：已内置 Kenney 车包多款车型，会随机出现并沿马路行驶
-        (sedan/suv/taxi/hatchback-sports/van/delivery.glb)
-        想换/加车型，丢同名或新的 .glb 进来告诉我即可
+已内置 Kenney 模型（会随机出现）：
+  汽车   sedan/suv/taxi/hatchback-sports/van/delivery.glb —— 沿马路行驶
+  高楼   sky-a~e (摩天楼) + com-a~e (商业楼)
+  房子   ind-a~f (工业厂房)
+  人物   char-male-a~d + char-female-a~d
+
+仍用几何体兜底、可替换的槽位：
+  tree.glb   树（放一个树模型即可自动替换）
+
+想换/加任意类别的模型：把 .glb 丢进本文件夹并告诉我文件名，我接上即可。
+所有模型都会自动缩放到合适大小、落在地面上。
 
 不用自己建模，推荐下载免费低多边形模型包（免费可商用）：
   · Kenney.nl        → City Kit / Nature Kit / Car Kit（最推荐，专为这类游戏做）

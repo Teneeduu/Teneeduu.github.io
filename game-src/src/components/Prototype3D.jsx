@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 // 真 3D 单场景原型。
 // 关键：如果 public/models/ 里放了对应 .glb，就用你的模型；否则用内置几何体兜底。
@@ -17,17 +18,26 @@ function faceDir(node, vx, vz, forwardAlongX) {
   node.rotation.y = forwardAlongX ? Math.atan2(-vz, vx) : Math.atan2(vx, vz)
 }
 
-// 物体类别：文件 / 数量 / 吞噬半径 / 门槛 / 目标直径 / 移动 / 兜底几何体
-// car 用多车型随机(files)，且 road:true 表示沿马路行驶
+// 物体类别：文件 / 数量 / 吞噬半径 / 门槛 / 目标高度(整体最大尺寸) / 移动 / 兜底几何体
+// files 数组 = 多模型随机；car road:true 表示沿马路行驶
 const SPECS = {
-  building: { file: 'building.glb', count: 45, radius: 15, threshold: 24, targetD: 30, fallback: makeBuilding },
-  house: { file: 'house.glb', count: 30, radius: 11, threshold: 16, targetD: 24, fallback: makeHouse },
-  tree: { file: 'tree.glb', count: 60, radius: 6, threshold: 9, targetD: 16, fallback: makeTree },
+  building: {
+    files: ['sky-a.glb', 'sky-b.glb', 'sky-c.glb', 'sky-d.glb', 'sky-e.glb', 'com-a.glb', 'com-b.glb', 'com-c.glb', 'com-d.glb', 'com-e.glb'],
+    count: 40, radius: 15, threshold: 24, targetH: 60, fallback: makeBuilding,
+  },
+  house: {
+    files: ['ind-a.glb', 'ind-b.glb', 'ind-c.glb', 'ind-d.glb', 'ind-e.glb', 'ind-f.glb'],
+    count: 28, radius: 11, threshold: 16, targetH: 24, fallback: makeHouse,
+  },
+  tree: { file: 'tree.glb', count: 55, radius: 6, threshold: 9, targetH: 18, fallback: makeTree },
   car: {
     files: ['sedan.glb', 'suv.glb', 'taxi.glb', 'hatchback-sports.glb', 'van.glb', 'delivery.glb'],
-    count: 34, radius: 5, threshold: 14, targetD: 13, mobile: 26, road: true, fallback: makeCar,
+    count: 34, radius: 5, threshold: 14, targetH: 13, mobile: 26, road: true, fallback: makeCar,
   },
-  person: { file: 'person.glb', count: 70, radius: 2.2, threshold: 8, targetD: 6, mobile: 12, fallback: makePerson },
+  person: {
+    files: ['char-male-a.glb', 'char-male-b.glb', 'char-male-c.glb', 'char-male-d.glb', 'char-female-a.glb', 'char-female-b.glb', 'char-female-c.glb', 'char-female-d.glb'],
+    count: 70, radius: 2.2, threshold: 8, targetH: 9, mobile: 12, fallback: makePerson,
+  },
 }
 
 // ---- 兜底几何体（没有模型时使用） ----
@@ -84,16 +94,16 @@ function makePerson() {
   return g
 }
 
-// 把任意尺寸的模型缩放到 targetD、并让底部落在 y=0、水平居中
-function fitModel(scene, targetD) {
-  const obj = scene.clone(true)
+// 把任意尺寸的模型缩放到 targetH(整体最大尺寸)、底部落在 y=0、水平居中
+function fitModel(scene, targetH) {
+  const obj = skeletonClone(scene) // 支持带骨架的角色模型
   const box = new THREE.Box3().setFromObject(obj)
   const size = new THREE.Vector3()
   box.getSize(size)
-  const maxXZ = Math.max(size.x, size.z) || 1
-  const s = targetD / maxXZ
+  const maxDim = Math.max(size.x, size.y, size.z) || 1
+  const s = targetH / maxDim
   const g = new THREE.Group()
-  g.userData.forwardAlongX = size.x > size.z // 长边所在轴即车头方向
+  g.userData.forwardAlongX = size.x > size.z // 长边所在轴（车头方向判断用）
   obj.scale.setScalar(s)
   // 重新计算缩放后包围盒以对齐地面/中心
   const box2 = new THREE.Box3().setFromObject(obj)
